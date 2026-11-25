@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escape room · Operación Marca Personal</title>
+<style>
+:root{--purple:#1C1B9C;--blue:#055DC5;--orange:#EF9C1B;--ink:#190F1F;--gray:#6B7280;--bg:#F1F1F5;--lav:#EEF1FF;--cream:#FFF4DF;--green:#2E7D63}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Aptos,sans-serif}
+header{background:linear-gradient(120deg,var(--purple),var(--blue));color:white;padding:22px 18px}
+.wrap{max-width:900px;margin:auto;padding:18px}
+h1{font-size:clamp(27px,5vw,42px);margin:0 0 8px;font-weight:900;letter-spacing:.3px}
+.sub{opacity:.92;font-size:16px;line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.stat{background:white;border-radius:14px;padding:12px;text-align:center;box-shadow:0 2px 8px #190f1f0d}
+.stat strong{display:block;font-size:25px;color:var(--purple)}.stat span{font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase}
+.panel{background:white;border-radius:18px;padding:22px;box-shadow:0 5px 20px #190f1f12;margin:14px 0}
+.eyebrow{color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:12px}
+h2{font-size:25px;margin:8px 0 14px}
+p{line-height:1.55}
+input[type=text]{font:inherit;padding:13px;border:2px solid #d8d9e7;border-radius:10px;width:100%;margin:10px 0}
+button{font:inherit;font-weight:800;border:0;border-radius:11px;padding:13px 18px;cursor:pointer}
+.primary{background:var(--purple);color:white}.secondary{background:var(--lav);color:var(--purple)}.warn{background:var(--orange);color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.option{display:flex;gap:12px;align-items:flex-start;border:2px solid #e5e6ef;padding:14px;border-radius:12px;margin:10px 0;cursor:pointer;line-height:1.45}
+.option:has(input:checked){border-color:var(--blue);background:var(--lav)}
+.option input{margin-top:4px;transform:scale(1.2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.feedback{padding:14px;border-radius:12px;margin-top:14px;font-weight:700;line-height:1.5}
+.good{background:#e5f4ed;color:#1d634e}.bad{background:#fff0e4;color:#87480a}.hint{background:var(--cream);color:#66470e}
+.progress{height:10px;background:#e3e4ed;border-radius:99px;overflow:hidden;margin:10px 0 18px}.progress div{height:100%;background:var(--orange);width:0%;transition:width .2s}
+.small{font-size:13px;color:var(--gray)}.hidden{display:none!important}
+.badge{display:inline-block;background:var(--cream);color:#704b05;border-radius:99px;padding:6px 10px;font-size:12px;font-weight:800}
+.resultcode{font-size:clamp(24px,5vw,36px);letter-spacing:6px;font-weight:900;color:var(--purple);text-align:center;padding:20px;background:var(--lav);border-radius:14px;overflow-wrap:anywhere}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.panel{padding:17px}.actions button{flex:1}}
+
+#miniBoard{display:grid;gap:7px;margin:16px 0;justify-content:center}
+.wordgrid{grid-template-columns:repeat(7,minmax(32px,48px))}
+.cell{padding:9px 4px;border:2px solid #dfe1ef;border-radius:8px;background:#fff;color:#190F1F;font-weight:900;cursor:pointer}
+.cell.selected{background:#EEF1FF;border-color:#055DC5;color:#1C1B9C}
+.cell.found{background:#e5f4ed;border-color:#2E7D63;color:#1d634e}
+.letterkeys{display:flex;flex-wrap:nowrap;gap:7px;margin:14px 0;max-width:100%;overflow-x:auto;padding:4px 2px}.letterkeys button{flex:0 0 auto}
+.letterkeys button{padding:9px 12px;background:#EEF1FF;color:#1C1B9C;min-width:36px}
+.letterkeys button:disabled{opacity:.3}
+.memorygrid{display:grid;grid-template-columns:repeat(4,minmax(55px,1fr));gap:9px;margin:16px 0}
+.memorycard{min-height:74px;background:#EEF1FF;color:#1C1B9C;border:2px solid #d6dafc;border-radius:12px;font-weight:800;padding:8px;word-break:break-word}
+.memorycard.open{background:#FFF4DF;color:#190F1F;border-color:#EF9C1B}
+.memorycard.matched{background:#e5f4ed;color:#1d634e;border-color:#2E7D63}
+.crossword{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;width:min(100%,294px);margin:16px auto}
+.crosscell{min-width:0;aspect-ratio:1;border:1px solid #d6d8e5;background:#190F1F;border-radius:4px;position:relative}
+.crosscell.active{background:#fff;border:2px solid #055DC5}
+.crosscell input{width:100%;height:100%;border:0;background:transparent;text-align:center;text-transform:uppercase;font-size:clamp(14px,4.5vw,20px);font-weight:900;color:#1C1B9C;padding:0;outline:none}
+.crossnum{position:absolute;top:1px;left:2px;font-size:9px;line-height:1;color:#6B7280;font-weight:700;pointer-events:none}
+.crossclues{background:#EEF1FF;padding:12px;border-radius:10px;line-height:1.6;margin-top:12px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>OPERACIÓN MARCA PERSONAL</h1>
+<div class="sub">Escape room formativo · 10 retos de nivel medio-alto<br>Construid una marca profesional coherente antes de que termine el tiempo.</div>
+</div></header>
+<main class="wrap">
+<div class="stats">
+<div class="stat"><strong id="score">100</strong><span>Puntos</span></div>
+<div class="stat"><strong id="clock">35:00</strong><span>Tiempo</span></div>
+<div class="stat"><strong id="progressText">0/10</strong><span>Retos</span></div>
+<div class="stat"><strong id="mistakes">0</strong><span>Trampas</span></div>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<section class="panel" id="intro">
+<div class="eyebrow">Briefing</div><h2>El perfil profesional está bloqueado</h2>
+<p>Una empresa va a revisar vuestro perfil digital. Para desbloquearlo, resolved 10 situaciones sobre identidad profesional, reputación, comunicación y estrategia. Algunas respuestas parecen correctas, pero contienen trampas.</p>
+<p><b>Reglas:</b> +15 puntos por acierto, −10 por error y −5 por pedir una pista. Cada reto correcto aporta una letra al código final. No se puede avanzar hasta resolverlo.</p>
+<label for="team"><b>Nombre del equipo</b></label>
+<input type="text" id="team" placeholder="Escribid el nombre del equipo" autocomplete="off">
+<button class="primary" id="startBtn">Comenzar misión</button>
+<p class="small">Recomendación: abrid este archivo en Chrome, Edge o Firefox. Se adapta a móvil y tablet.</p>
+</section>
+<section class="panel hidden" id="game">
+<div class="eyebrow" id="missionLabel">Reto 1 de 10</div>
+<h2 id="questionTitle"></h2>
+<p id="scenario"></p>
+<div id="options"></div>
+<div class="actions">
+<button class="primary" id="checkBtn">Comprobar respuesta</button>
+<button class="secondary" id="hintBtn">Pedir pista (−5)</button>
+<button class="primary hidden" id="nextBtn">Siguiente reto</button>
+</div>
+<div id="feedback" aria-live="polite"></div>
+</section>
+
+<section class="panel hidden" id="miniGame">
+<div class="eyebrow" id="miniLabel">Pausa de juego</div>
+<h2 id="miniTitle">Minijuego</h2>
+<p id="miniInstruction"></p>
+<div id="miniBoard"></div>
+<div id="miniFeedback" aria-live="polite"></div>
+<div class="actions"><button class="primary hidden" id="miniContinue">Continuar al siguiente reto</button></div>
+</section>
+<section class="panel hidden" id="finish">
+<div class="eyebrow">Misión completada</div><h2 id="finishTitle">Perfil desbloqueado</h2>
+<p id="finishText"></p>
+<div class="resultcode" id="finalCode"></div>
+<p id="resultNote"></p>
+<button class="primary" id="restartBtn">Volver a jugar</button>
+</section>
+</main>
+<script>
+const challenges = [
+{title:"1. Propuesta de valor",scenario:"Una candidata tiene experiencia en atención al cliente y manejo de herramientas digitales. En su perfil escribe: «Soy responsable, trabajadora y aprendo rápido». ¿Qué mejora más su propuesta de valor?",options:["Añadir más adjetivos positivos para transmitir seguridad.","Concretar a quién ayuda, qué necesidad resuelve y con qué fortalezas o evidencias.","Usar una frase llamativa, aunque no esté relacionada con el puesto.","Copiar el resumen de un perfil profesional que tenga muchas visitas."],correct:1,hint:"La propuesta de valor debe permitir entender qué aportas y en qué contexto.",explain:"Una propuesta de valor conecta público o necesidad, aportación y fortalezas demostrables. Los adjetivos genéricos no diferencian.",letter:"R"},
+{title:"2. Coherencia entre canales",scenario:"En el CV aparece «auxiliar administrativo». En LinkedIn, «experto en estrategia empresarial»; en una red pública comparte mensajes que ridiculizan a clientes. ¿Qué actuación es más adecuada?",options:["Eliminar todas las redes y mantener únicamente el CV.","Cambiar el titular de LinkedIn por uno más ambicioso, sin revisar el resto.","Alinear la descripción profesional con la experiencia real y revisar la huella pública con criterio.","Mantenerlo: cada canal es independiente y las empresas no los relacionan."],correct:2,hint:"La coherencia no significa publicar lo mismo en todos los canales, sino sostener una identidad creíble.",explain:"Los canales pueden tener funciones distintas, pero la información y el comportamiento público deben ser compatibles con la identidad profesional.",letter:"E"},
+{title:"3. Evidencia frente a afirmaciones",scenario:"En una entrevista dices que tienes «gran capacidad de organización». ¿Cuál es la evidencia más convincente?",options:["Afirmar que todo el mundo te considera organizado.","Enumerar cinco cualidades más para reforzar la impresión.","Decir que nunca cometes errores.","Describir una situación concreta, la acción que organizaste y el resultado verificable."],correct:3,hint:"Piensa en una prueba que permita valorar la competencia, no en otra opinión.",explain:"Una evidencia concreta —situación, acción y resultado— hace evaluable una competencia. Evita afirmaciones absolutas o sin respaldo.",letter:"P"},
+{title:"4. Reputación digital",scenario:"Encuentras una publicación antigua en la que aparece información personal que ya no quieres que esté visible. ¿Cuál es el primer paso razonable?",options:["Revisar quién la publicó, la configuración de privacidad y las opciones de edición o retirada; después comprobar su visibilidad.","Crear una cuenta nueva y asumir que la publicación desaparecerá.","Responder con datos personales adicionales para explicar el contexto.","Pedir a todos tus contactos que denuncien la publicación, aunque no infrinja normas."],correct:0,hint:"Antes de actuar, identifica el origen del contenido y qué control tienes sobre él.",explain:"La gestión de reputación empieza por localizar el contenido, comprobar permisos y privacidad y utilizar vías de edición, retirada o solicitud adecuadas.",letter:"U"},
+{title:"5. Comunicación profesional",scenario:"Un contacto te escribe: «¿Puedes enviarme tu CV?». Aún no sabes qué puesto ofrece. ¿Qué respuesta proyecta mejor una marca profesional?",options:["Enviar un mensaje largo contando toda tu trayectoria.","Responder con una frase clara, adjuntar un CV actualizado y preguntar por el tipo de puesto o perfil que necesita.","Enviar el CV sin texto, para que el documento hable por sí solo.","Responder con un mensaje informal lleno de abreviaturas para parecer cercano."],correct:1,hint:"Combina claridad, cortesía y una pregunta útil para ajustar la información.",explain:"La comunicación profesional debe facilitar el siguiente paso. Un mensaje breve, CV pertinente y pregunta concreta muestran interés y criterio.",letter:"T"},
+{title:"6. Networking con propósito",scenario:"Quieres contactar con una profesional de un sector que te interesa, pero no la conoces. ¿Qué mensaje tiene más posibilidades de iniciar una relación útil?",options:["«Hola, necesito trabajo. ¿Me recomiendas en tu empresa?»","Enviar el mismo mensaje genérico a 50 personas.","Referirte a un aspecto concreto de su trayectoria, explicar brevemente tu interés y formular una pregunta específica y razonable.","Pedirle una llamada de una hora en el primer mensaje."],correct:2,hint:"Un buen primer contacto demuestra que sabes a quién escribes y respeta su tiempo.",explain:"El networking funciona mejor cuando es personalizado, contextualizado y plantea una petición proporcionada, sin exigir una recomendación inmediata.",letter:"A"},
+{title:"7. Diferenciarse sin exagerar",scenario:"Para destacar en una candidatura, alguien quiere escribir «dominio avanzado de Excel», aunque solo sabe hacer tablas y fórmulas sencillas. ¿Qué alternativa es más sólida?",options:["Mantener «avanzado» porque es habitual exagerar en los CV.","Eliminar cualquier referencia a Excel.","Escribir «experto» y aprender después si le contratan.","Describir el nivel real y las tareas que sabe realizar; puede añadir que está ampliando conocimientos."],correct:3,hint:"La diferenciación sostenible debe poder defenderse en una prueba o entrevista.",explain:"La marca personal se construye con credibilidad. Es preferible precisar el nivel y las tareas dominadas que atribuirse una competencia que no puede demostrarse.",letter:"C"},
+{title:"8. Plan de contenidos",scenario:"Una persona quiere posicionarse como profesional de la cocina. Publica recetas, pero también comparte contenido que no tiene relación con ese objetivo. ¿Qué estrategia es más eficaz?",options:["Definir un objetivo y público, elegir temas relacionados, mantener una frecuencia realista y revisar qué publicaciones aportan valor.","Publicar todos los días cualquier contenido para aumentar el alcance.","Repetir exactamente las publicaciones de una cuenta famosa.","Borrar todo lo que no tenga muchas reacciones en las primeras horas."],correct:0,hint:"La estrategia debe partir del objetivo y del público, no de la cantidad de publicaciones.",explain:"Un plan de contenidos coherente define propósito, audiencia, temas, ritmo sostenible y revisión de resultados.",letter:"I"},
+{title:"9. Responder a una crítica",scenario:"Un cliente deja una crítica pública razonable sobre un error en tu trabajo. ¿Cuál es la respuesta más profesional?",options:["Discutir punto por punto y demostrar que el cliente se equivoca.","Ignorarla siempre, porque responder da visibilidad negativa.","Reconocer el problema sin revelar datos privados, explicar el siguiente paso y trasladar los detalles a un canal adecuado.","Borrar la crítica desde la cuenta del cliente."],correct:2,hint:"La respuesta pública debe ser respetuosa y cuidar la privacidad; la solución concreta puede continuar en privado.",explain:"Una respuesta responsable reconoce la incidencia, evita datos personales y ofrece una vía de resolución. No conviene entrar en una discusión pública.",letter:"O"},
+{title:"10. Evaluar y ajustar",scenario:"Tras un mes, tu perfil recibe muchas visitas, pero casi nadie contacta contigo. ¿Qué decisión demuestra mejor una gestión estratégica de la marca personal?",options:["Cambiar la foto cada semana hasta conseguir más visitas.","Revisar si el perfil comunica claramente qué ofreces, a quién ayudas y cómo contactarte; analizar visitas y conversiones antes de ajustar.","Comprar seguidores para aumentar la apariencia de popularidad.","Publicar más contenido sin revisar el objetivo ni los resultados."],correct:1,hint:"Las visitas son una métrica de atención; comprueba si el perfil facilita la acción que buscas.",explain:"La evaluación debe relacionar métricas con objetivos. Si hay visitas pero no contactos, revisa propuesta de valor, llamada a la acción y adecuación del público.",letter:"N"}
+];
+let current=0, score=100, traps=0, timeLeft=45*60, timer=null, locked=false, letters=[], teamName="";
+const $=id=>document.getElementById(id);
+function updateStats(){ $("score").textContent=score; $("progressText").textContent=current+"/10"; $("mistakes").textContent=traps; $("bar").style.width=(current/10*100)+"%";}
+function showTime(){let m=Math.floor(timeLeft/60),s=timeLeft%60;$("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");}
+function begin(){teamName=$("team").value.trim()||"Equipo sin nombre";$("intro").classList.add("hidden");$("game").classList.remove("hidden");timer=setInterval(()=>{timeLeft--;showTime();if(timeLeft<=0){clearInterval(timer);finish(true);}},1000);loadQuestion();}
+function loadQuestion(){locked=false;const q=challenges[current];$("missionLabel").textContent="Reto "+(current+1)+" de 10 · "+teamName;$("questionTitle").textContent=q.title;$("scenario").textContent=q.scenario;$("options").innerHTML="";q.options.forEach((opt,i)=>{let label=document.createElement("label");label.className="option";let radio=document.createElement("input");radio.type="radio";radio.name="answer";radio.value=i;let span=document.createElement("span");span.textContent=opt;label.append(radio,span);$("options").append(label);});$("feedback").innerHTML="";$("checkBtn").classList.remove("hidden");$("hintBtn").classList.remove("hidden");$("nextBtn").classList.add("hidden");$("checkBtn").disabled=false;$("hintBtn").disabled=false;updateStats();}
+function selected(){let r=document.querySelector('input[name="answer"]:checked');return r?Number(r.value):null;}
+function check(){if(locked)return;let a=selected();if(a===null){$("feedback").innerHTML='<div class="feedback hint">Seleccionad una respuesta antes de comprobar.</div>';return;}locked=true;const q=challenges[current];document.querySelectorAll('input[name="answer"]').forEach(x=>x.disabled=true);$("checkBtn").disabled=true;$("hintBtn").disabled=true;$("checkBtn").classList.add("hidden");$("hintBtn").classList.add("hidden");$("nextBtn").classList.remove("hidden");if(a===q.correct){score+=15;letters.push(q.letter);$("feedback").innerHTML='<div class="feedback good">¡Correcto! +15 puntos. Fragmento obtenido: <b>'+q.letter+'</b><br>'+q.explain+'</div>';}else{score-=10;traps++;$("feedback").innerHTML='<div class="feedback bad">Respuesta incorrecta: −10 puntos. Habéis caído en una trampa.<br><b>Respuesta correcta:</b> '+q.options[q.correct]+'<br>'+q.explain+'</div>';}current++;updateStats();}
+function hint(){if(locked)return;score-=5;$("hintBtn").disabled=true;const q=challenges[current];$("feedback").innerHTML='<div class="feedback hint">Pista (−5 puntos): '+q.hint+'</div>';updateStats();}
+
+function next(){if(current>=10){finish(false);return;}launchMiniGame(current-1);}
+const miniGames=[
+{type:"crossword"},
+{type:"hang",word:"HUELLA",clue:"Rastro que dejas con tu actividad en internet."},
+{type:"memory",pairs:[["CV","Trayectoria y competencias"],["RED","Contactos profesionales"],["VALOR","Aportación diferencial"],["REPUTACIÓN","Percepción que generas"]]},
+{type:"crossword"},
+{type:"hang",word:"COHERENCIA",clue:"La identidad, el mensaje y la conducta deben mantenerla."},
+{type:"memory",pairs:[["OBJETIVO","Meta profesional"],["EVIDENCIA","Prueba de una competencia"],["PERFIL","Presentación profesional"],["CONTACTO","Inicio de una relación"]]},
+{type:"crossword"},
+{type:"hang",word:"MARCA",clue:"Imagen profesional que construyes y comunicas."},
+{type:"memory",pairs:[["PRIVACIDAD","Control de datos personales"],["CONTENIDO","Lo que publicas"],["PÚBLICO","A quién te diriges"],["ESTRATEGIA","Plan para alcanzar una meta"]]}
+];
+let miniSolved=false, hangGuessed=[], hangWrong=0, wordSelection=[], memoryOpen=[], memoryMatched=[];
+function launchMiniGame(index){
+ $("game").classList.add("hidden");$("miniGame").classList.remove("hidden");
+ const g=miniGames[index%miniGames.length];miniSolved=false;
+ $("miniLabel").textContent="Minijuego "+(index+1)+" de 9";
+ $("miniBoard").innerHTML="";$("miniFeedback").innerHTML="";
+ $("miniContinue").classList.add("hidden");
+ if(g.type==="word") setupWord(g);
+ if(g.type==="crossword") setupCrossword(index);
+ if(g.type==="hang") setupHang(g);
+ if(g.type==="memory") setupMemory(g);
+}
+function miniWin(message){if(miniSolved)return;miniSolved=true;$("miniFeedback").innerHTML='<div class="feedback good">'+message+'</div>';$("miniContinue").classList.remove("hidden");}
+function setupCrossword(index){
+ $("miniTitle").textContent="Mini crucigrama";
+ $("miniInstruction").textContent="Completa las palabras. Las casillas compartidas deben coincidir; cada número marca el inicio de una palabra.";
+ const size=7;
+ const puzzles=[
+  [
+   {word:"MARCA",row:0,col:0,dir:"across",num:1,clue:"Identidad profesional que construyes y comunicas."},
+   {word:"RED",row:0,col:2,dir:"down",num:2,clue:"Conjunto de contactos profesionales."},
+   {word:"DATO",row:2,col:2,dir:"across",num:3,clue:"Información personal que conviene proteger."}
+  ],
+  [
+   {word:"PERFIL",row:0,col:0,dir:"across",num:1,clue:"Presentación de tus competencias y experiencia."},
+   {word:"RETO",row:0,col:2,dir:"down",num:2,clue:"Situación que exige una respuesta o esfuerzo."},
+   {word:"TEMA",row:2,col:2,dir:"across",num:3,clue:"Asunto sobre el que publicas o hablas."}
+  ],
+  [
+   {word:"VALOR",row:0,col:0,dir:"across",num:1,clue:"Aportación útil que puedes ofrecer."},
+   {word:"VISION",row:0,col:0,dir:"down",num:2,clue:"Idea de lo que quieres alcanzar profesionalmente."},
+   {word:"IDEA",row:1,col:0,dir:"across",num:3,clue:"Pensamiento o propuesta que puedes compartir."},
+   {word:"OFICIO",row:4,col:0,dir:"across",num:4,clue:"Trabajo o profesión que una persona sabe desempeñar."}
+  ]
+ ];
+ const entries=puzzles[index===0?0:index===3?1:2];
+ const active=new Map(), starts=new Map();
+ entries.forEach(e=>{
+  starts.set(e.row+","+e.col,e.num);
+  [...e.word].forEach((ch,i)=>{
+   const r=e.row+(e.dir==="down"?i:0),c=e.col+(e.dir==="across"?i:0),key=r+","+c;
+   if(!active.has(key))active.set(key,{answer:ch,nums:[]});
+   const info=active.get(key);
+   if(info.answer!==ch)throw new Error("Cruce de letras incorrecto en el crucigrama");
+   info.nums.push(e.num);
+  });
+ });
+ const board=document.createElement("div");board.className="crossword";board.id="crossBoard";
+ for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+  const key=r+","+c,cell=document.createElement("div");cell.className="crosscell";
+  if(active.has(key)){
+   const info=active.get(key);cell.classList.add("active");
+   if(starts.has(key)){const num=document.createElement("span");num.className="crossnum";num.textContent=starts.get(key);cell.append(num);}
+   const input=document.createElement("input");input.maxLength=1;input.autocomplete="off";
+   input.dataset.answer=info.answer;input.setAttribute("aria-label","Casilla "+(info.nums.join("/")));
+   input.addEventListener("input",()=>{input.value=input.value.toUpperCase().slice(-1);});
+   cell.append(input);
+  }
+  board.append(cell);
+ }
+ $("miniBoard").append(board);
+ const across=entries.filter(e=>e.dir==="across"),down=entries.filter(e=>e.dir==="down");
+ const clues=document.createElement("div");clues.className="crossclues";
+ clues.innerHTML="<b>Horizontales</b><br>"+across.map(e=>e.num+". "+e.clue).join("<br>")+"<br><br><b>Verticales</b><br>"+down.map(e=>e.num+". "+e.clue).join("<br>");
+ $("miniBoard").append(clues);
+ const check=document.createElement("button");check.className="primary";check.textContent="Comprobar crucigrama";
+ check.addEventListener("click",()=>{
+  const inputs=[...board.querySelectorAll("input")];
+  const clean=v=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+  const ok=inputs.every(inp=>clean(inp.value)===clean(inp.dataset.answer));
+  if(ok)miniWin("¡Crucigrama resuelto!");
+  else $("miniFeedback").innerHTML='<div class="feedback bad">Hay letras incorrectas o casillas sin completar. Revisad las palabras y los cruces.</div>';
+ });
+ $("miniBoard").append(check);
+}
+function setupWord(g){
+ $("miniTitle").textContent="Sopa de letras";
+ $("miniInstruction").textContent="Encuentra la palabra relacionada con la pista. Está escondida en horizontal o vertical. Pulsa las letras en orden.";
+ const size=7, grid=Array(size*size).fill("");
+ const word=g.word.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+ const vertical=(current%2===0), start=vertical?2*size+1:3*size;
+ for(let i=0;i<word.length;i++)grid[start+(vertical?i*size:i)]=word[i];
+ const alphabet="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+ for(let i=0;i<grid.length;i++)if(!grid[i])grid[i]=alphabet[Math.floor(Math.random()*alphabet.length)];
+ $("miniInstruction").textContent+=" Pista: "+g.clue;
+ $("miniBoard").className="wordgrid";wordSelection=[];
+ grid.forEach((letter,i)=>{let b=document.createElement("button");b.className="cell";b.textContent=letter;b.dataset.i=i;b.addEventListener("click",()=>{if(miniSolved)return;b.classList.toggle("selected");if(b.classList.contains("selected"))wordSelection.push(i);else wordSelection=wordSelection.filter(x=>x!==i);let picked=wordSelection.map(x=>grid[x]).join("");if(picked===word){wordSelection.forEach(x=>$("miniBoard").querySelector('[data-i="'+x+'"]').classList.add("found"));miniWin("¡Palabra encontrada!");}else if(!word.startsWith(picked)){wordSelection.forEach(x=>{$("miniBoard").querySelector('[data-i="'+x+'"]').classList.remove("selected")});wordSelection=[];}});$("miniBoard").append(b);});
+}
+function setupHang(g){
+ $("miniTitle").textContent="Ahorcado profesional";
+ $("miniInstruction").textContent="Adivina el concepto. Tienes 6 fallos permitidos. Pista: "+g.clue;
+ hangGuessed=[];hangWrong=0;
+ const area=document.createElement("div");area.id="hangDisplay";area.style.cssText="font-size:28px;font-weight:900;letter-spacing:7px;text-align:center;padding:18px;color:#1C1B9C";
+ $("miniBoard").append(area);
+ const status=document.createElement("p");status.id="hangStatus";status.className="small";status.textContent="Fallos: 0/6";$("miniBoard").append(status);
+ const keys=document.createElement("div");keys.className="letterkeys";keys.id="hangKeys";$("miniBoard").append(keys);
+ "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("").forEach(ch=>{let b=document.createElement("button");b.textContent=ch;b.addEventListener("click",()=>{if(miniSolved)return;b.disabled=true;hangGuessed.push(ch);if(!g.word.normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(ch))hangWrong++;renderHang(g);});keys.append(b);});
+ renderHang(g);
+}
+function renderHang(g){
+ const normalized=g.word.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+ $("hangDisplay").textContent=g.word.split("").map((ch,i)=>hangGuessed.includes(normalized[i])?ch:"_").join(" ");
+ $("hangStatus").textContent="Fallos: "+hangWrong+"/6";
+ if([...normalized].every(ch=>hangGuessed.includes(ch)))miniWin("¡Concepto descubierto!");
+ else if(hangWrong>=6){$("hangDisplay").textContent=g.word; $("miniFeedback").innerHTML='<div class="feedback bad">Se acabaron los intentos. La palabra era '+g.word+'.</div>';miniSolved=true;$("miniContinue").classList.remove("hidden");}
+}
+function setupMemory(g){
+ $("miniTitle").textContent="Parejas de cartas";
+ $("miniInstruction").textContent="Encuentra las cuatro parejas entre concepto y definición. Pulsa dos cartas para compararlas.";
+ const deck=[];
+ g.pairs.forEach((pair,i)=>{deck.push({id:i,text:pair[0]});deck.push({id:i,text:pair[1]});});
+ for(let i=deck.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+ memoryOpen=[];memoryMatched=[];
+ $("miniBoard").className="memorygrid";
+ deck.forEach((card,i)=>{
+  let b=document.createElement("button");
+  b.className="memorycard";b.textContent="?";b.dataset.index=i;
+  b.addEventListener("click",()=>{
+   if(miniSolved||memoryMatched.includes(i)||memoryOpen.includes(i))return;
+   b.textContent=card.text;b.classList.add("open");memoryOpen.push(i);
+   if(memoryOpen.length===2){
+    let a=memoryOpen[0],c=memoryOpen[1];
+    if(deck[a].id===deck[c].id){
+     memoryMatched.push(a,c);
+     [a,c].forEach(n=>{
+      let el=$("miniBoard").querySelector('[data-index="'+n+'"]');
+      el.classList.remove("open");el.classList.add("matched");
+     });
+     memoryOpen=[];
+     if(memoryMatched.length===deck.length)miniWin("¡Todas las parejas encontradas!");
+    }else{
+     setTimeout(()=>{
+      [a,c].forEach(n=>{
+       let el=$("miniBoard").querySelector('[data-index="'+n+'"]');
+       el.textContent="?";el.classList.remove("open");
+      });
+      memoryOpen=[];
+     },750);
+    }
+   }
+  });
+  $("miniBoard").append(b);
+ });
+}
+$("miniContinue").addEventListener("click",()=>{$("miniGame").classList.add("hidden");$("game").classList.remove("hidden");loadQuestion();});
+
+function finish(timeout){clearInterval(timer);$("game").classList.add("hidden");$("finish").classList.remove("hidden");$("finishTitle").textContent=timeout?"Tiempo agotado":"Misión completada";$("finishText").textContent=teamName+", habéis resuelto "+current+" de 10 retos. Puntuación final: "+score+" puntos.";let code=letters.join("");$("finalCode").textContent=code||"—";$("resultNote").textContent=letters.length===10?"Código final completo: usad la secuencia de letras obtenida para abrir el sobre final.":"Habéis conseguido "+letters.length+" fragmentos. Para obtener el código completo, resolved los 10 retos en una nueva partida.";}
+function restart(){location.reload();}
+$("startBtn").addEventListener("click",begin);$("checkBtn").addEventListener("click",check);$("hintBtn").addEventListener("click",hint);$("nextBtn").addEventListener("click",next);$("restartBtn").addEventListener("click",restart);showTime();updateStats();
+</script>
+</body></html>
